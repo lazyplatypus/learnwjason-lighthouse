@@ -1,4 +1,4 @@
-import { useState , useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 
 import Fuse from 'fuse.js';
@@ -7,35 +7,30 @@ import _ from 'lodash';
 import styles from '../styles/Home.module.css';
 import CodeSampleModal from '../components/CodeSampleModal';
 
-
-
-export default function Start({ countries }) {
-  const [results, setResults] = useState(countries);
+export default function Start() {
+  const [results, setResults] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const fuse = new Fuse(countries, {
+
+  useEffect(() => {
+    function fetchCountries() {
+        fetch('https://deelaynr.onrender.com/2000/restcountries.com/v3.1/all')
+            .then(response => response.json())
+            .then(countries => {
+                const countriesData = countries.map((country) => ({
+                    name: country.name.common,
+                    cca2: country.cca2,
+                    population: country.population,
+                }));
+                setResults(countriesData);
+            });
+    }
+    fetchCountries();
+  }, []);
+
+  const fuse = new Fuse(results, {
     keys: ['name'],
     threshold: 0.3,
   });
-  const [color, setColor] = useState('black');
-
-  useEffect(() => {
-    const delay = 2000;
-    const timeoutId = setTimeout(() => {
-      async function getLocation() {
-        const response = await fetch('https://ipapi.co/json/')
-        const data = await response.json();
-        if (data.country_code === 'US') {
-          setColor('red');
-        } else if (data.country_code === 'CA') {
-          setColor('green');
-        } else {
-          setColor('black');
-        }
-      }
-      getLocation();
-    }, delay);
-    return () => clearTimeout(timeoutId);
-  }, []);
 
   return (
     <div>
@@ -44,10 +39,9 @@ export default function Start({ countries }) {
         <meta name="description" content="Core web vitals walk through" />
         <link rel="icon" href="/favicon.ico" />
         <link
-          href="https://deelaynr.onrender.com/2000/fonts.googleapis.com/css2?family=Inter"
+          href="https://fonts.googleapis.com/css2?family=Inter"
           rel="stylesheet"
         />
-        <script async type="text/javascript" src="/newrelic.js"></script>
       </Head>
 
       <main className={styles.container}>
@@ -56,18 +50,17 @@ export default function Start({ countries }) {
         </h1>
 
         <div className={styles.heroImage}>
-          <img src="https://deelaynr.onrender.com/2000/https://i.ibb.co/rvN8Y6j/hero.jpg" alt="Large Image" />
+          <img src="large-image.jpg" alt="Large Image" />
         </div>
 
         <div>
-          <h2 className={styles.secondaryHeading}  style={{ color }}>Population Lookup</h2>
+          <h2 className={styles.secondaryHeading}>Population Lookup</h2>
           <input
             type="text"
             placeholder="Country search..."
             className={styles.input}
             onChange={async (e) => {
               const { value } = e.currentTarget;
-
               const searchResult = fuse
                 .search(value)
                 .map((result) => result.item);
@@ -120,19 +113,4 @@ export default function Start({ countries }) {
       </footer>
     </div>
   );
-}
-
-export async function getServerSideProps() {
-  const response = await fetch('https://restcountries.com/v3.1/all');
-  const countries = await response.json();
-
-  return {
-    props: {
-      countries: countries.map((country) => ({
-        name: country.name.common,
-        cca2: country.cca2,
-        population: country.population,
-      })),
-    },
-  };
 }
